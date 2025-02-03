@@ -17,6 +17,7 @@ options = vision.PoseLandmarkerOptions(
 detector = vision.PoseLandmarker.create_from_options(options)
 
 
+
 def draw_landmarks_on_image(rgb_image, detection_result):
   pose_landmarks_list = detection_result.pose_landmarks
   annotated_image = np.copy(rgb_image)
@@ -36,10 +37,12 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.pose.POSE_CONNECTIONS,
       solutions.drawing_styles.get_default_pose_landmarks_style())
     
-
-
     
-  return annotated_image
+    h,w,_ = annotated_image.shape
+    landmark_Coordinates: dict = {i: (int(landmark.x * w), int(landmark.y * h)) for i,landmark in enumerate (pose_landmarks)}
+
+    # print(landmark_Coordinates)
+    return annotated_image, landmark_Coordinates
 
 
 def process_and_save(imageArray, detector):
@@ -50,9 +53,10 @@ def process_and_save(imageArray, detector):
     detection_result = detector.detect(mpImage)
 
     #could speed things up here posible
-    annotated_image = draw_landmarks_on_image(mpImage.numpy_view(), detection_result)
-    
-    return annotated_image
+    annotated_image,landmark_Coordinates = draw_landmarks_on_image(mpImage.numpy_view(), detection_result)
+
+
+    return annotated_image, landmark_Coordinates
 
 
 # Configure the RealSense pipeline
@@ -60,10 +64,16 @@ pipeline = rs.pipeline()
 config = rs.config()
 
 # Enable depth and color streams
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 60)
 # config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
 
 pipeline.start(config)
+
+
+#Setup open CV Graph Canvas
+width, height = 700, 940
+canvas = np.ones((height, width, 3), dtype=np.uint8) * 255
+
 
 
 try:
@@ -79,12 +89,37 @@ try:
 
 
         #alter images 
-        finalImage = process_and_save(color_image, detector)
+        annotated_image, landmark_Coordinates = process_and_save(color_image, detector)
 
-        cv2.imshow("Color Stream", finalImage)
+        cv2.imshow("Color Stream", annotated_image)
 
         # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
         # cv2.imshow("Depth Stream", depth_colormap)
+
+
+
+
+        # Change Graph
+        points =[]
+
+        #update points
+        points = landmark_Coordinates
+
+
+        canvas = np.ones((height, width, 3), dtype=np.uint8) * 255  # Clear canvas
+    
+        # Draw axes
+        cv2.line(canvas, (50, height - 50), (width - 50, height - 50), (0, 0, 0), 2)  # X-axis
+        cv2.line(canvas, (50, height - 50), (50, 50), (0, 0, 0), 2)  # Y-axis
+
+        # Plot points
+        if(points!= None):
+            for i in range(1, len(points)):
+                cv2.circle(canvas, points[i], 3, (0, 0, 255), -1)
+
+        # Show the updated image
+        cv2.imshow("Real-Time Graph", canvas)
+
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
