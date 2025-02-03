@@ -40,7 +40,8 @@ def draw_landmarks_on_image(rgb_image, detection_result):
 
 def process_and_save(imageArray, detector):
     #change input here
-    mpImage = mp.Image.create_from_array(imageArray)
+    imageCreator = mp.Image
+    mpImage = imageCreator(mp.ImageFormat.SRGB, imageArray)
 
     detection_result = detector.detect(mpImage)
 
@@ -55,7 +56,7 @@ pipeline = rs.pipeline()
 config = rs.config()
 
 # Enable depth and color streams
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 15)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 60)
 # config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 15)
 
 pipeline.start(config)
