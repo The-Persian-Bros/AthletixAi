@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Viewer - Live Stream</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; margin-top: 2rem; }
+    video { border: 1px solid #333; width: 640px; height: 480px; }
+  </style>
+</head>
+<body>
+  <h1>Viewer - Live Stream</h1>
+  <video id="player" autoplay playsinline controls></video>
+  <script>
+    const player = document.getElementById("player");
+    let pc;
+    // Connect to the viewer endpoint
+    const ws = new WebSocket("ws://localhost:3001/stream");
+    ws.onopen = () => {
+      console.log("WebSocket connected (viewer).");
+    };
+
+    ws.onmessage = async (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        if (message.type === "offer") {
+          console.log("Received offer:", message);
+          pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+          });
+          pc.onicecandidate = (event) => {
+            if (event.candidate) {
+              ws.send(JSON.stringify({ type: "candidate", candidate: event.candidate }));
+            }
+          };
+          pc.ontrack = (event) => {
+            console.log("Received remote track.");
+            player.srcObject = event.streams[0];
+          };
+          await pc.setRemoteDescription(message);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          ws.send(JSON.stringify({ type: "answer", sdp: answer.sdp, type: answer.type }));
+        } else if (message.type === "candidate") {
+          if (pc) {
+            try {
+              await pc.addIceCandidate(message.candidate);
+              console.log("Added ICE candidate (viewer).");
+            } catch (err) {
+              console.error("Error adding ICE candidate:", err);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error handling message:", err);
+      }
+    };
+
+    ws.onerror = (err) => console.error("WebSocket error (viewer):", err);
+    ws.onclose = () => console.log("WebSocket closed (viewer).");
+  </script>
+</body>
+</html>
