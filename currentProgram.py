@@ -38,9 +38,12 @@ def draw_landmarks_on_image(rgb_image, detection_result):
       solutions.drawing_styles.get_default_pose_landmarks_style())
     
     
+    #what are we converting to here? Come back
     h,w,_ = annotated_image.shape
     landmark_Coordinates: dict = {i: (int(landmark.x * w), int(landmark.y * h)) for i,landmark in enumerate (pose_landmarks)}
 
+    if not landmark_Coordinates:
+        landmark_Coordinates = {}
     # print(landmark_Coordinates)
     return annotated_image, landmark_Coordinates
 
@@ -96,11 +99,6 @@ try:
         # depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
         # cv2.imshow("Depth Stream", depth_colormap)
 
-
-
-
-        # Change Graph
-        points =[]
 
         #update points
         points = landmark_Coordinates
