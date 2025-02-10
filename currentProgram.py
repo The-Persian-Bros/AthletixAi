@@ -77,8 +77,6 @@ pipeline.start(config)
 width, height = 700, 940
 canvas = np.ones((height, width, 3), dtype=np.uint8) * 255
 
-
-
 try:
     while True:
         # Wait for the next frame
@@ -102,7 +100,6 @@ try:
 
         #update points
         points = landmark_Coordinates
-
 
         canvas = np.ones((height, width, 3), dtype=np.uint8) * 255  # Clear canvas
     

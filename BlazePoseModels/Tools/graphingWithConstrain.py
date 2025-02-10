@@ -4,9 +4,10 @@ import numpy as np
 import time
 
 class NormalizedLandmark:
-    def __init__(self, x, y):
+    def __init__(self, x, y, z):
         self.x = x
         self.y = y
+        self.z = z
 
 
 # Initialize MediaPipe Pose
@@ -41,7 +42,7 @@ while cap.isOpened():
 
         normalizedLandmarks =[]
         for landmark in landmarks:
-            normalizedLandmarks.append( NormalizedLandmark(int(landmark.x * w), int(landmark.y * h)) )
+            normalizedLandmarks.append( NormalizedLandmark(int(landmark.x * w), int(landmark.y * h), landmark.z) )
 
         if not normalizedLandmarks:
             normalizedLandmarks = []
@@ -50,6 +51,7 @@ while cap.isOpened():
         minimalX = 1000000
         greatestY = -100000
         minimalY = 100000
+        averageZ = 0
 
 
         for landmark in normalizedLandmarks:
@@ -61,6 +63,8 @@ while cap.isOpened():
                 greatestY = landmark.y
             if landmark.y< minimalY:
                 minimalY = landmark.y
+            averageZ += landmark.z
+        averageZ /= (len(normalizedLandmarks))
 
         cv2.rectangle(frame, (minimalX, minimalY), (greatestX, greatestY), (255, 0, 0), 2)
         
@@ -90,11 +94,10 @@ while cap.isOpened():
         thickness = 2
 
         # Display the values on screen
-        cv2.putText(frame, f"Greatest X: {greatestX}", (30, 50), font, font_scale, color, thickness)
-        cv2.putText(frame, f"Minimal X: {minimalX}", (30, 100), font, font_scale, color, thickness)
-        cv2.putText(frame, f"Greatest Y: {greatestY}", (30, 150), font, font_scale, color, thickness)
-        cv2.putText(frame, f"Minimal Y: {minimalY}", (30, 200), font, font_scale, color, thickness)
-
+        cv2.putText(frame, f"Greatest X: {greatestX}", (30, 100), font, font_scale, color, thickness)
+        cv2.putText(frame, f"Minimal X: {minimalX}", (30, 150), font, font_scale, color, thickness)
+        cv2.putText(frame, f"Greatest Y: {greatestY}", (30, 200), font, font_scale, color, thickness)
+        cv2.putText(frame, f"Minimal Y: {minimalY}", (30, 250), font, font_scale, color, thickness)
 
         cv2.putText(frame, f"Yaw Angle: {yaw_angle_deg:.2f} deg", (30, 50),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
@@ -102,7 +105,8 @@ while cap.isOpened():
         normalized_points = [
             NormalizedLandmark(
                 int((l.x - minimalX) / (greatestX - minimalX) * 500),  # Normalize X
-                int((l.y - minimalY) / (greatestY - minimalY) * 500)   # Normalize Y
+                int((l.y - minimalY) / (greatestY - minimalY) * 500),
+                l.z   # Normalize Y
             )
             for l in normalizedLandmarks
         ]
@@ -122,10 +126,14 @@ while cap.isOpened():
         if(points!= None):
             for l in normalized_points:
                 cv2.circle(canvas, (l.x, l.y), 5, (0, 255, 0), -1)
+        
+        y= int(-landmarks[12].z *500)  + 450
 
+        cv2.line(canvas, (0,y), (700,y), (0,0,250))
+        # print(y)
         # Show the updated image
-        cv2.imshow("Real-Time Graph", canvas)
 
+        cv2.imshow("Real-Time Graph", canvas)
 
         # Draw landmarks
         mp_drawing.draw_landmarks(frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
@@ -135,6 +143,5 @@ while cap.isOpened():
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
 cap.release()
 cv2.destroyAllWindows()
