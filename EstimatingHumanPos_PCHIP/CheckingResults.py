@@ -43,5 +43,5 @@ class ClipComparisonVisualizer:
         plt.show()
 
 # Usage Example
-visualizer = ClipComparisonVisualizer(keypoint_indices=[1, 5, 10])  # Choose keypoints to display
+visualizer = ClipComparisonVisualizer(keypoint_indices=[8, 3, 5])  # Choose keypoints to display
 visualizer.visualize_comparison()

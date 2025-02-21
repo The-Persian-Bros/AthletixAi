@@ -4,7 +4,6 @@ from torch.utils.data import Dataset, DataLoader
 
 class PoseDataset(Dataset):
     def __init__(self, dataset_path):
-        # Load the dataset
         dataset = np.load(dataset_path, allow_pickle=True).item()
         
         self.data = dataset['data']  # List of numpy arrays (num_frames, 33, 3)
@@ -14,8 +13,8 @@ class PoseDataset(Dataset):
         self.label_map = {label: idx for idx, label in enumerate(sorted(set(self.labels)))}
         self.numeric_labels = [self.label_map[label] for label in self.labels]
 
-        # Convert to tensor & reshape to match ST-GCN format: (num_samples, 33, num_frames, 3)
-        self.data = [torch.tensor(np.array(sample), dtype=torch.float32).permute(1, 0, 2) for sample in self.data]
+        # Convert to tensor & reshape to (num_samples, 3, 100, 33)
+        self.data = [torch.tensor(sample, dtype=torch.float32).permute(2, 0, 1) for sample in self.data]  
         self.labels = torch.tensor(self.numeric_labels, dtype=torch.long)
 
     def __len__(self):
@@ -24,11 +23,27 @@ class PoseDataset(Dataset):
     def __getitem__(self, idx):
         return self.data[idx], self.labels[idx]
 
-# Load dataset
-dataset_path = "pose_dataset.npy"
-train_dataset = PoseDataset(dataset_path)
-train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+import numpy as np
+from collections import Counter
 
-# Verify dataset
-sample_data, sample_label = next(iter(train_loader))
-print(f"Data shape: {sample_data.shape}, Labels shape: {sample_label.shape}")
+dataset_path = "pose_dataset_interpolated.npy"
+
+# Load dataset
+dataset = np.load(dataset_path, allow_pickle=True).item()
+
+# Extract data and labels
+data = dataset['data']
+labels = dataset['labels']
+
+# Check dataset size
+print(f"Total Samples: {len(data)}")
+
+# Count occurrences of each label
+label_counts = Counter(labels)
+print("Label Distribution:")
+for label, count in label_counts.items():
+    print(f"{label}: {count} occurrences")
+
+# Print shapes of each sample
+for i, sample in enumerate(data[:5]):  # Print only first 5 to avoid long output
+    print(f"Sample {i}: Shape {sample.shape}, Label: {labels[i]}")

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import PchipInterpolator
 
 class PCHIPInterpolator:
-    def __init__(self, dataset_path, target_frames=100):
+    def __init__(self, dataset_path, target_frames):
         self.dataset_path = dataset_path
         self.target_frames = target_frames
         self.dataset = self.load_dataset()
